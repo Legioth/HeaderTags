@@ -15,11 +15,19 @@ import java.lang.annotation.Target;
  * the methods of that annotation are used to define attributes of a
  * corresponding HTML tag that is added to the bootstrap page for a UI.
  * <p>
+ * For methods returning String values, the returned string is used as the
+ * attribute value. Returning the special value {@link #NULL_VALUE} removes the
+ * attribute and an empty string is included as an empty string in the HTML.
+ * <p>
+ * For methods returning a Class that implements {@link AttributeGenerator}, an
+ * instance of the returned class is created using the default constructor and
+ * the return value of
+ * {@link AttributeGenerator#getValue(String, String, com.vaadin.server.VaadinRequest)}
+ * is used as the attribute value.
+ * <p>
  * By default, the name of the annotation method is used as the attribute name,
  * with <code>camelCase</code> rewritten as <code>camel-case</code>. The name
- * mapping can also be redefined using {@link HeadTagAttribute}. Attributes
- * carrying the special value {@link #NULL_VALUE} are ignored whereas empty
- * strings are included as empty strings in the HTML.
+ * mapping can also be redefined using {@link HeadTagAttribute}.
  * <p>
  * Tag annotations can be refined further by using that annotation as a meta
  * annotation on another annotation. See {@link Viewport} for an example of this

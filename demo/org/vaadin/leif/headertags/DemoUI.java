@@ -10,8 +10,26 @@ import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.UI;
 
+class MyViewportGenerator implements AttributeGenerator {
+    @Override
+    public String getValue(String tag, String attributeName,
+            VaadinRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent == null) {
+            // No viewport tag
+            return null;
+        } else if (userAgent.toLowerCase().contains("mobile")) {
+            return "width=device-width, initial-scale=1, maximum-scale=1";
+        } else {
+            return "width=900";
+        }
+    }
+}
+
+// Sets a meta viewport header generator
+@ViewportGenerator(MyViewportGenerator.class)
 // Sets a meta viewport header
-@Viewport("width=device-width, initial-scale=1")
+// @Viewport("width=device-width, initial-scale=1")
 // How to add multiple tags of the same type
 @MetaTags({
         // Replaces the Vaadin X-UA-Compatible header

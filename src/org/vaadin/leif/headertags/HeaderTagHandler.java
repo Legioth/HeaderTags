@@ -16,6 +16,7 @@ import com.vaadin.server.BootstrapPageResponse;
 import com.vaadin.server.ServiceException;
 import com.vaadin.server.SessionInitEvent;
 import com.vaadin.server.SessionInitListener;
+import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinService;
 import com.vaadin.ui.UI;
 
@@ -37,7 +38,7 @@ public class HeaderTagHandler implements BootstrapListener {
         Element fakeHead = new Element(Tag.valueOf("head"), response
                 .getDocument().baseUri());
 
-        appendHeadTagAnnotations(fakeHead, uiClass);
+        appendHeadTagAnnotations(fakeHead, uiClass, response.getRequest());
 
         Element realHead = response.getDocument().head();
 
@@ -68,17 +69,18 @@ public class HeaderTagHandler implements BootstrapListener {
     }
 
     private void appendHeadTagAnnotations(Element head,
-            Class<? extends UI> uiClass) {
+            Class<? extends UI> uiClass, VaadinRequest request) {
         for (Annotation annotation : uiClass.getAnnotations()) {
-            checkHeadTagAnnotation(head, annotation);
+            checkHeadTagAnnotation(head, annotation, request);
         }
     }
 
-    private void checkHeadTagAnnotation(Element head, Annotation annotation) {
+    private void checkHeadTagAnnotation(Element head, Annotation annotation,
+            VaadinRequest request) {
         // Check if a path to a HeadTag meta annotation can be found
         List<Annotation> headTagPath = findHeadTagPath(annotation);
         if (headTagPath != null) {
-            appendHeadTag(head, headTagPath);
+            appendHeadTag(head, headTagPath, request);
         } else {
             // Check for an array value annotation
             try {
@@ -89,7 +91,7 @@ public class HeaderTagHandler implements BootstrapListener {
                     int length = Array.getLength(array);
                     for (int i = 0; i < length; i++) {
                         Annotation member = (Annotation) Array.get(array, i);
-                        checkHeadTagAnnotation(head, member);
+                        checkHeadTagAnnotation(head, member, request);
                     }
                 }
             } catch (NoSuchMethodException e) {
@@ -106,7 +108,8 @@ public class HeaderTagHandler implements BootstrapListener {
                 && Annotation.class.isAssignableFrom(type.getComponentType());
     }
 
-    private void appendHeadTag(Element head, List<Annotation> headTagPath) {
+    private void appendHeadTag(Element head, List<Annotation> headTagPath,
+            VaadinRequest request) {
         // Should be at least the meta annotation and a "normal" annotation
         assert headTagPath.size() > 1;
 
@@ -123,9 +126,12 @@ public class HeaderTagHandler implements BootstrapListener {
                 String name = getHeadTagAttributeName(method);
 
                 try {
-                    String value = (String) method.invoke(attribAnnotation);
+                    Object annotationValue = method.invoke(attribAnnotation);
 
-                    if (HeadTag.NULL_VALUE.equals(value)) {
+                    String value = getAttributeValue(annotationValue,
+                            tag.value(), name, request);
+
+                    if (value == null || HeadTag.NULL_VALUE.equals(value)) {
                         element.removeAttr(name);
                     } else {
                         element.attr(name, value);
@@ -138,6 +144,22 @@ public class HeaderTagHandler implements BootstrapListener {
                 }
             }
         }
+    }
+
+    private String getAttributeValue(Object annotationValue, String tag,
+            String attributeName, VaadinRequest request) throws Exception {
+        if (annotationValue instanceof String) {
+            return (String) annotationValue;
+        } else if (annotationValue instanceof Class) {
+            Class<?> classValue = (Class<?>) annotationValue;
+            if (AttributeGenerator.class.isAssignableFrom(classValue)) {
+                return classValue.asSubclass(AttributeGenerator.class)
+                        .newInstance().getValue(tag, attributeName, request);
+            }
+        }
+
+        throw new RuntimeException("Unsupported attribute annotation type: "
+                + annotationValue.getClass().getCanonicalName());
     }
 
     private String getHeadTagAttributeName(Method method) {
