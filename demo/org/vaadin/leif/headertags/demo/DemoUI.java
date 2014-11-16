@@ -4,13 +4,12 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 
-import org.vaadin.leif.headertags.AttributeGenerator;
 import org.vaadin.leif.headertags.HeaderTagHandler;
 import org.vaadin.leif.headertags.Link;
 import org.vaadin.leif.headertags.Meta;
 import org.vaadin.leif.headertags.MetaTags;
+import org.vaadin.leif.headertags.Viewport;
 import org.vaadin.leif.headertags.ViewportGenerator;
-import org.vaadin.leif.headertags.demo.DemoUI.MyViewportGenerator;
 
 import com.vaadin.annotations.VaadinServletConfiguration;
 import com.vaadin.server.VaadinRequest;
@@ -18,11 +17,9 @@ import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.UI;
 
-// Sets a meta viewport header generator
-@ViewportGenerator(MyViewportGenerator.class)
-// Sets a meta viewport header
-// @Viewport("width=device-width, initial-scale=1")
-// How to add multiple tags of the same type
+// Sets a basic viewport meta header
+@Viewport("width=device-width, initial-scale=1")
+// Adds multiple tags of the same type
 @MetaTags({
         // Replaces the Vaadin X-UA-Compatible header
         @Meta(httpEquiv = "X-UA-Compatible", content = "hello"),
@@ -31,15 +28,12 @@ import com.vaadin.ui.UI;
 @Link(rel = "foobar", href = "about:blank")
 public class DemoUI extends UI {
 
-    public static class MyViewportGenerator implements AttributeGenerator {
+    // Generator class declared in the UI class is directly used
+    public static class MyViewportGenerator implements ViewportGenerator {
         @Override
-        public String getValue(String tag, String attributeName,
-                VaadinRequest request) {
+        public String getViewport(VaadinRequest request) {
             String userAgent = request.getHeader("User-Agent");
-            if (userAgent == null) {
-                // No viewport tag
-                return null;
-            } else if (userAgent.toLowerCase().contains("mobile")) {
+            if (userAgent != null && userAgent.toLowerCase().contains("mobile")) {
                 return "width=device-width, initial-scale=1, maximum-scale=1";
             } else {
                 return "width=900";

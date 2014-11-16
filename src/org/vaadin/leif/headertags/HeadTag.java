@@ -6,32 +6,31 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.vaadin.server.VaadinRequest;
+
 /**
- * Meta annotation for defining the tag name of an annotation that can be used
- * on a UI class to define HTML tags that are added to the head of the host
- * page.
+ * Defines the tag name of an HTML tag that can be added to the head of the host
+ * page for a UI class.
  * <p>
- * For annotation types marked with {@code HeadTag} (for example {@link Meta}),
- * the methods of that annotation are used to define attributes of a
- * corresponding HTML tag that is added to the bootstrap page for a UI.
+ * For annotations marked with {@code HeadTag} (for example {@link Meta}), the
+ * methods of that annotation are used to define attributes of a corresponding
+ * HTML tag that is added to the bootstrap page for a UI. Returning the special
+ * value {@link #NULL_VALUE} removes the attribute and an empty string is
+ * included as an empty string in the HTML.
  * <p>
- * For methods returning String values, the returned string is used as the
- * attribute value. Returning the special value {@link #NULL_VALUE} removes the
- * attribute and an empty string is included as an empty string in the HTML.
- * <p>
- * For methods returning a Class that implements {@link AttributeGenerator}, an
- * instance of the returned class is created using the default constructor and
- * the return value of
- * {@link AttributeGenerator#getValue(String, String, com.vaadin.server.VaadinRequest)}
- * is used as the attribute value.
- * <p>
- * By default, the name of the annotation method is used as the attribute name,
- * with <code>camelCase</code> rewritten as <code>camel-case</code>. The name
- * mapping can also be redefined using {@link HeadTagAttribute}.
+ * By default, the method name is used as the attribute name, with
+ * <code>camelCase</code> rewritten as <code>camel-case</code>. The name mapping
+ * can also be redefined using {@link HeadTagAttribute}.
  * <p>
  * Tag annotations can be refined further by using that annotation as a meta
  * annotation on another annotation. See {@link Viewport} for an example of this
  * usage.
+ * <p>
+ * A tag annotation can also be used on a non-annotation type to make it work as
+ * an attribute generator. Generators can be defined for a UI class using
+ * {@link HeadTagGenerators}. Generator classes that are defined as inner
+ * classes of a UI class are also used as generators. Methods in generator types
+ * can optionally accept a parameter of type {@link VaadinRequest}.
  * <p>
  * Support for multiple annotations of the same type can also be used by
  * defining a collection annotation where value() returns an array of compatible
@@ -43,7 +42,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target(ElementType.ANNOTATION_TYPE)
+@Target(ElementType.TYPE)
 public @interface HeadTag {
     /**
      * The tag name to use for for annotations annotated with this type.

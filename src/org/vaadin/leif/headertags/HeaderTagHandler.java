@@ -4,7 +4,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
@@ -70,17 +73,48 @@ public class HeaderTagHandler implements BootstrapListener {
 
     private void appendHeadTagAnnotations(Element head,
             Class<? extends UI> uiClass, VaadinRequest request) {
-        for (Annotation annotation : uiClass.getAnnotations()) {
-            checkHeadTagAnnotation(head, annotation, request);
+        processAnnotatedType(head, request, uiClass, null);
+
+        Set<Class<?>> generatorCandidates = new HashSet<Class<?>>(
+                Arrays.asList(uiClass.getDeclaredClasses()));
+        HeadTagGenerators generatorAnnotation = uiClass
+                .getAnnotation(HeadTagGenerators.class);
+        if (generatorAnnotation != null) {
+            generatorCandidates.addAll(Arrays.asList(generatorAnnotation
+                    .value()));
+        }
+
+        for (Class<?> generatorClass : generatorCandidates) {
+            processGeneratorClass(head, request, generatorClass);
+        }
+    }
+
+    private void processGeneratorClass(Element head, VaadinRequest request,
+            Class<?> generatorClass) {
+        // @Inherited does not inherit from interfaces, must check manually
+        for (Class<?> iface : generatorClass.getInterfaces()) {
+            processAnnotatedType(head, request, iface, generatorClass);
+        }
+
+        processAnnotatedType(head, request, generatorClass, generatorClass);
+    }
+
+    private void processAnnotatedType(Element head, VaadinRequest request,
+            Class<?> declaringClass, Class<?> instanceClass) {
+        for (Annotation annotation : declaringClass.getAnnotations()) {
+            checkHeadTagAnnotation(head, annotation, request, declaringClass,
+                    instanceClass);
         }
     }
 
     private void checkHeadTagAnnotation(Element head, Annotation annotation,
-            VaadinRequest request) {
+            VaadinRequest request, Class<?> declaringClass,
+            Class<?> instanceClass) {
         // Check if a path to a HeadTag meta annotation can be found
         List<Annotation> headTagPath = findHeadTagPath(annotation);
         if (headTagPath != null) {
-            appendHeadTag(head, headTagPath, request);
+            appendHeadTag(head, headTagPath, request, declaringClass,
+                    instanceClass);
         } else {
             // Check for an array value annotation
             try {
@@ -91,7 +125,8 @@ public class HeaderTagHandler implements BootstrapListener {
                     int length = Array.getLength(array);
                     for (int i = 0; i < length; i++) {
                         Annotation member = (Annotation) Array.get(array, i);
-                        checkHeadTagAnnotation(head, member, request);
+                        checkHeadTagAnnotation(head, member, request,
+                                declaringClass, instanceClass);
                     }
                 }
             } catch (NoSuchMethodException e) {
@@ -109,7 +144,8 @@ public class HeaderTagHandler implements BootstrapListener {
     }
 
     private void appendHeadTag(Element head, List<Annotation> headTagPath,
-            VaadinRequest request) {
+            VaadinRequest request, Class<?> declaringClass,
+            Class<?> instanceClass) {
         // Should be at least the meta annotation and a "normal" annotation
         assert headTagPath.size() > 1;
 
@@ -123,43 +159,60 @@ public class HeaderTagHandler implements BootstrapListener {
 
             for (Method method : attribAnnotation.annotationType()
                     .getDeclaredMethods()) {
-                String name = getHeadTagAttributeName(method);
+                appendAttribute(request, element, attribAnnotation, method);
+            }
+        }
 
-                try {
-                    Object annotationValue = method.invoke(attribAnnotation);
-
-                    String value = getAttributeValue(annotationValue,
-                            tag.value(), name, request);
-
-                    if (value == null || HeadTag.NULL_VALUE.equals(value)) {
-                        element.removeAttr(name);
-                    } else {
-                        element.attr(name, value);
+        if (instanceClass != null) {
+            try {
+                Object instance = instanceClass.newInstance();
+                Method[] methods = declaringClass.getMethods();
+                for (Method method : methods) {
+                    if (method.getDeclaringClass() == Object.class) {
+                        continue;
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException(
-                            "Error processing @HeadTag annotation method "
-                                    + method.getDeclaringClass().getName()
-                                    + "." + method.getName(), e);
+                    appendAttribute(request, element, instance, method);
                 }
+
+            } catch (Exception e) {
+                throw new RuntimeException("Error processing annotated type "
+                        + declaringClass.getCanonicalName(), e);
             }
         }
     }
 
-    private String getAttributeValue(Object annotationValue, String tag,
-            String attributeName, VaadinRequest request) throws Exception {
-        if (annotationValue instanceof String) {
-            return (String) annotationValue;
-        } else if (annotationValue instanceof Class) {
-            Class<?> classValue = (Class<?>) annotationValue;
-            if (AttributeGenerator.class.isAssignableFrom(classValue)) {
-                return classValue.asSubclass(AttributeGenerator.class)
-                        .newInstance().getValue(tag, attributeName, request);
-            }
-        }
+    private void appendAttribute(VaadinRequest request, Element element,
+            Object targetInstance, Method method) {
+        try {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            Object[] parameters = new Object[parameterTypes.length];
 
-        throw new RuntimeException("Unsupported attribute annotation type: "
-                + annotationValue.getClass().getCanonicalName());
+            for (int i = 0; i < parameterTypes.length; i++) {
+                Class<?> type = parameterTypes[i];
+                if (type == VaadinRequest.class) {
+                    parameters[i] = request;
+                } else {
+                    throw new RuntimeException(
+                            "Unsupported generator parameter type: "
+                                    + type.getCanonicalName());
+                }
+            }
+
+            String value = (String) method.invoke(targetInstance, parameters);
+
+            String name = getHeadTagAttributeName(method);
+
+            if (value == null || HeadTag.NULL_VALUE.equals(value)) {
+                element.removeAttr(name);
+            } else {
+                element.attr(name, value);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Error processing @HeadTag annotation method "
+                            + method.getDeclaringClass().getName() + "."
+                            + method.getName(), e);
+        }
     }
 
     private String getHeadTagAttributeName(Method method) {

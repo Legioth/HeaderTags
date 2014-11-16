@@ -1,23 +1,25 @@
 package org.vaadin.leif.headertags;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import com.vaadin.server.VaadinRequest;
 
 /**
- * Defines a viewport meta tag generator for the host page of a UI class.
+ * Dynamically generates the content of a viewport meta tag based on a request.
+ * <p>
+ * To make a UI class use a generator, add a {@link HeadTagGenerators}
+ * annotation to the UI class, pointing to the implementation class. If the
+ * generator class is defined as an inner class of the UI, it is automatically
+ * used without a {@link HeadTagGenerators} annotation.
  */
-@Documented
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
 @Meta(name = "viewport")
-public @interface ViewportGenerator {
+public interface ViewportGenerator {
+
     /**
-     * The viewport definition generator.
+     * Generates the viewport definition based on a {@link VaadinRequest}.
      * 
-     * @return the viewport definition generator class
+     * @param request
+     *            the request
+     * @return the viewport meta tag content
      */
     @HeadTagAttribute("content")
-    Class<? extends AttributeGenerator> value();
+    public String getViewport(VaadinRequest request);
 }
