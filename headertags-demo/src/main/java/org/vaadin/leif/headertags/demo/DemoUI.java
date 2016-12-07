@@ -1,10 +1,7 @@
 package org.vaadin.leif.headertags.demo;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 
-import org.vaadin.leif.headertags.HeaderTagHandler;
 import org.vaadin.leif.headertags.Link;
 import org.vaadin.leif.headertags.Meta;
 import org.vaadin.leif.headertags.MetaTags;
@@ -44,13 +41,7 @@ public class DemoUI extends UI {
     @WebServlet(value = "/*", asyncSupported = true)
     @VaadinServletConfiguration(productionMode = false, ui = DemoUI.class)
     public static class Servlet extends VaadinServlet {
-        @Override
-        public void init(ServletConfig servletConfig) throws ServletException {
-            super.init(servletConfig);
 
-            // Hook up with the framework's host page generation
-            HeaderTagHandler.init(getService());
-        }
     }
 
     @Override

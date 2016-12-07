@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
@@ -16,14 +17,17 @@ import org.jsoup.select.Elements;
 import com.vaadin.server.BootstrapFragmentResponse;
 import com.vaadin.server.BootstrapListener;
 import com.vaadin.server.BootstrapPageResponse;
-import com.vaadin.server.ServiceException;
-import com.vaadin.server.SessionInitEvent;
-import com.vaadin.server.SessionInitListener;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinService;
 import com.vaadin.ui.UI;
 
 public class HeaderTagHandler implements BootstrapListener {
+
+    /**
+     * Keeps track the {@link VaadinService} instances for which the handler has
+     * been inited.
+     */
+    private static final ConcurrentHashMap<VaadinService, Boolean> initedServices = new ConcurrentHashMap<>();
 
     @Override
     public void modifyBootstrapFragment(BootstrapFragmentResponse response) {
@@ -268,13 +272,14 @@ public class HeaderTagHandler implements BootstrapListener {
     }
 
     public static void init(VaadinService service) {
-        final BootstrapListener listener = new HeaderTagHandler();
-        service.addSessionInitListener(new SessionInitListener() {
-            @Override
-            public void sessionInit(SessionInitEvent event)
-                    throws ServiceException {
-                event.getSession().addBootstrapListener(listener);
-            }
+        initedServices.computeIfAbsent(service, s -> {
+            final BootstrapListener listener = new HeaderTagHandler();
+            s.addSessionInitListener(
+                    event -> event.getSession().addBootstrapListener(listener));
+            s.addServiceDestroyListener(e -> initedServices.remove(s));
+
+            // Dummy value, using the Map as a Set
+            return Boolean.TRUE;
         });
     }
 }
