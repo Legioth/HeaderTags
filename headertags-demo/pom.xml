@@ -5,12 +5,12 @@
 	<groupId>org.vaadin.leif</groupId>
 	<artifactId>headertags-demo</artifactId>
 	<packaging>war</packaging>
-	<version>1.2.0-SNAPSHOT</version>
+	<version>2.0-SNAPSHOT</version>
 	<name>HeaderTags Add-on Demo</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<vaadin.version>7.3.3</vaadin.version>
+		<vaadin.version>8.0-SNAPSHOT</vaadin.version>
 	</properties>
 
 	<licenses>
@@ -88,8 +88,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.0</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>
 
