@@ -2,6 +2,7 @@ package org.vaadin.leif.headertags;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -34,8 +35,11 @@ import com.vaadin.server.VaadinRequest;
  * <p>
  * Support for multiple annotations of the same type can also be used by
  * defining a collection annotation where value() returns an array of compatible
- * annotations. See {@link MetaTags} for an example of this usage.
- * 
+ * annotations. See {@link MetaTags} for an example of this usage. It's also
+ * recommended to add {@link Repeatable} to the main annotation to enable
+ * directly adding multiple similar annotation to a UI instead of using the
+ * collection annotation.
+ *
  * @see Meta
  * @see Viewport
  */
@@ -46,7 +50,7 @@ import com.vaadin.server.VaadinRequest;
 public @interface HeadTag {
     /**
      * The tag name to use for for annotations annotated with this type.
-     * 
+     *
      * @return the HTML tag name
      */
     public String value();

@@ -4,7 +4,6 @@ import javax.servlet.annotation.WebServlet;
 
 import org.vaadin.leif.headertags.Link;
 import org.vaadin.leif.headertags.Meta;
-import org.vaadin.leif.headertags.MetaTags;
 import org.vaadin.leif.headertags.Viewport;
 import org.vaadin.leif.headertags.ViewportGenerator;
 
@@ -17,10 +16,9 @@ import com.vaadin.ui.UI;
 // Sets a basic viewport meta header
 @Viewport("width=device-width, initial-scale=1")
 // Adds multiple tags of the same type
-@MetaTags({
-        // Replaces the Vaadin X-UA-Compatible header
-        @Meta(httpEquiv = "X-UA-Compatible", content = "hello"),
-        @Meta(name = "test", content = "test") })
+// Replaces the Vaadin X-UA-Compatible header
+@Meta(httpEquiv = "X-UA-Compatible", content = "hello")
+@Meta(name = "test", content = "test")
 // And showing how to create a link tag as well
 @Link(rel = "foobar", href = "about:blank")
 public class DemoUI extends UI {
